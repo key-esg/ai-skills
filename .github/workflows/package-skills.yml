@@ -1,0 +1,44 @@
+name: Package skills
+
+# Rebuilds the per-skill ZIPs (for claude.ai / Claude Desktop / ChatGPT "upload a skill")
+# and attaches them to the rolling "latest" release whenever a skill changes.
+# Download URLs stay stable: releases/latest/download/<skill-name>.zip
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'skills/**'
+      - '.github/workflows/package-skills.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build per-skill ZIPs
+        run: |
+          mkdir -p dist
+          for dir in skills/*/; do
+            skill=$(basename "$dir")
+            # Zip from inside skills/ so the archive root is the skill folder itself,
+            # matching the frontmatter `name` as Claude's upload requires.
+            (cd skills && zip -r "../dist/${skill}.zip" "$skill")
+          done
+          ls -l dist
+
+      - name: Publish to the rolling release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if ! gh release view skills-latest >/dev/null 2>&1; then
+            gh release create skills-latest --latest \
+              --title "KEY ESG AI Skills" \
+              --notes "Per-skill ZIPs for claude.ai / Claude Desktop / ChatGPT skill upload. Rebuilt automatically on every change."
+          fi
+          gh release upload skills-latest dist/*.zip --clobber
