@@ -11,12 +11,13 @@ Skills follow the [Agent Skills Specification](https://agentskills.io/specificat
 
 ## Available skills
 
-| Skill | Description |
-| --- | --- |
-| [ESG Questionnaire](skills/esg-questionnaire/SKILL.md) | Answer LP, vendor, or regulatory ESG questionnaires using live KEY ESG data. |
-| [Portfolio Data Query](skills/portfolio-data-query/SKILL.md) | Ask natural-language questions about portfolio ESG performance across funds and years. |
-| [ESG Commitment Gap Analysis](skills/esg-commitment-gap-analysis/SKILL.md) | Identify off-track targets, unmitigated commitments, and missing action plan coverage. |
-| [ESG Reporting Brief](skills/esg-reporting-brief/SKILL.md) | Draft board packs, investor updates, or annual report sections from your ESG data. |
+| Skill                                                                      | Description                                                                                                                                    |
+| -------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| [ESG Questionnaire](skills/esg-questionnaire/SKILL.md)                     | Answer LP, vendor, or regulatory ESG questionnaires using live KEY ESG data.                                                                   |
+| [Portfolio Data Query](skills/portfolio-data-query/SKILL.md)               | Ask natural-language questions about portfolio ESG performance across funds and years.                                                         |
+| [ESG Commitment Gap Analysis](skills/esg-commitment-gap-analysis/SKILL.md) | Identify off-track targets, unmitigated commitments, and missing action plan coverage.                                                         |
+| [ESG Reporting Brief](skills/esg-reporting-brief/SKILL.md)                 | Draft board packs, investor updates, or annual report sections from your ESG data.                                                             |
+| [Metric Breakdown Analysis](skills/metric-breakdown-analysis/SKILL.md)     | Break a metric down over time (monthly/quarterly) or across entities, or portfolio companies, reconciling each split against the yearly total. |
 
 ## Installing a skill
 
