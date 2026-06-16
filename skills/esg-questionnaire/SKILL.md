@@ -1,15 +1,17 @@
 ---
 name: esg-questionnaire
 description: Use when answering LP or vendor ESG due diligence questionnaires using KEY ESG data, or when a user needs to populate a questionnaire from ESG metrics, targets, policies, or action plans.
-compatibility: Requires KEY ESG MCP server (https://api.keyesg.com/mcp) connected as a custom connector or via Claude Desktop config.
+compatibility: Requires the KEY ESG MCP server connected as a custom connector or via Claude Desktop config. Any endpoint works — the legacy endpoint (https://api.keyesg.com/mcp), the fund-manager endpoint (https://api.keyesg.com/pe/mcp), or the standalone-company endpoint (https://api.keyesg.com/standalone/mcp) — pick the one matching your account type. The connector may appear under any name (typically "key-esg" or "KEY ESG") — detect the connection by tool availability (e.g. who_am_i), not by server name or URL.
 ---
 
 ## Step 1 — Establish Context
 
-Determine session type from the tools visible in your tool list:
+Call `who_am_i` first (no arguments). It returns the authenticated user, organisation name, `organisationType`, roles, and (for fund managers) the accessible portfolio companies.
 
-- **`list_portfolio_metrics` is available** → Fund Manager session — use portfolio tools (`list_portfolio_metrics`, `get_portfolio_metric_value`)
-- **`list_metrics` is available** → Company session (standalone or portfolio company) — use self-assessment tools (`list_metrics`, `get_metric_value`)
+- **`organisationType: "fund_manager"`** → Fund Manager session — use portfolio tools (`list_portfolio_metrics`, `get_portfolio_metric_value`). `portfolioCompanies` gives the `companyId` values for per-company drilldowns.
+- **`organisationType: "company"`** → Company session (standalone or portfolio company) — use self-assessment tools (`list_metrics`, `get_metric_value`).
+
+Use `companyName` as the organisation name in the completed questionnaire. If `who_am_i` is unavailable, fall back to the tool list: `list_portfolio_metrics` present → Fund Manager session; `list_metrics` present → company session.
 
 Ask the user for:
 
@@ -89,7 +91,7 @@ If the questionnaire asks about a specific portfolio company rather than the agg
 get_metric_value
   metricIds: ["<uuid>", "<uuid>", ...]
   year: "<year>"
-  companyId: "<portfolio-company-uuid>"   # from get_portfolio_reporting_summary
+  companyId: "<portfolio-company-uuid>"   # from who_am_i portfolioCompanies or get_portfolio_reporting_summary
 ```
 
 Only built-in metrics and fund-manager-owned custom metrics are returned; portfolio-company custom metrics are excluded.
@@ -103,6 +105,24 @@ get_metric_value
 ```
 
 For the portfolio path, `companiesIncluded` counts companies with real reported values; `companiesMissingData` counts companies on the data request without data. Their sum is the total in-scope companies (those asked for this metric, not the whole portfolio). Use for coverage: e.g. "12,450 tCO2e across 18 of 22 in-scope companies (4 missing data)".
+
+**Company sessions — activity-level evidence (optional):**
+
+When a question asks for the detail behind an emissions figure (e.g. "List your Scope 1 emission sources", "Break down fuel consumption by site"), use the carbon data tools:
+
+```
+list_entities                                  # site/subsidiary ids and names
+list_carbon_datapoint_groups
+  year: "<year>"
+  ghgScope: "<scope-1|scope-2|scope-3>"        # optional
+list_raw_carbon_entries
+  year: "<year>"
+  ghgScope: "<scope-1|scope-2|scope-3>"        # optional
+  entityIds: ["<uuid>", ...]                   # optional — from list_entities
+  dataPointGroupIds: ["<uuid>", ...]           # optional — from list_carbon_datapoint_groups
+```
+
+`list_raw_carbon_entries` is paginated — follow `pagination.nextCursor` until `hasMore` is false. Each entry gives entity, data point group, activity description, quantity, unit, and period — cite these as evidence; do not recalculate emissions from them.
 
 Draft answer: **"[value] [unitOfMeasure] ([metricTitle], [year])"**
 
@@ -202,6 +222,6 @@ you're not able to create an excel sheet or pdf file.
 ## Notes
 
 - Batch `get_metric_value` and `get_portfolio_metric_value` calls (up to 50 metric IDs per call) to reduce round-trips.
-- If a portfolio tool returns an authorisation error, the session lacks Fund Manager admin rights — note the scope limitation and do not fabricate data.
+- If a portfolio tool returns an authorisation error, the session lacks a Fund Manager Admin or Fund Manager role — note the scope limitation and do not fabricate data.
 - If the questionnaire has sections (E / S / G), use the `category` filter in Step 3 per section to keep discovery focused.
 - Do not estimate or interpolate missing values. If data is absent, flag it.

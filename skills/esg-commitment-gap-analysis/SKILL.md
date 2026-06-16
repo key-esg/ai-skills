@@ -1,10 +1,12 @@
 ---
 name: esg-commitment-gap-analysis
 description: Use when a user wants to identify ESG commitment gaps, understand which targets are off-track or unmitigated, audit action plan coverage, or prepare a gap analysis for board or programme review.
-compatibility: Requires KEY ESG MCP server (https://api.keyesg.com/mcp) connected as a custom connector or via Claude Desktop config.
+compatibility: Requires the KEY ESG MCP server connected as a custom connector or via Claude Desktop config. Any endpoint works — the legacy endpoint (https://api.keyesg.com/mcp), the fund-manager endpoint (https://api.keyesg.com/pe/mcp), or the standalone-company endpoint (https://api.keyesg.com/standalone/mcp) — pick the one matching your account type. The connector may appear under any name (typically "key-esg" or "KEY ESG") — detect the connection by tool availability (e.g. who_am_i), not by server name or URL.
 ---
 
-## Step 1 — Load All Targets
+## Step 1 — Establish Context, Then Load All Targets
+
+Call `who_am_i` first (no arguments). `organisationType` tells you which metric tool applies in Step 4 (`"fund_manager"` → `list_portfolio_metrics`; `"company"` → `list_metrics`), and `companyName` names the organisation in the output header.
 
 Fetch the complete target set with no filters. This gives the full picture.
 
@@ -38,16 +40,16 @@ Returns: `id`, `title`, `description`, `category`, `owner`, `status`, `dueDate`.
 
 For each at-risk or missed target, determine whether the status is driven by actual performance or missing data.
 
-Check your tool list to determine session type, then call the appropriate tool:
+Use the `organisationType` from Step 1 to pick the tool:
 
-**`list_portfolio_metrics` available (Fund Manager session):**
+**`organisationType: "fund_manager"` (Fund Manager session):**
 
 ```
 list_portfolio_metrics
   year: "<targetYear or current year>"
 ```
 
-**`list_metrics` available (company session):**
+**`organisationType: "company"` (company session):**
 
 ```
 list_metrics
@@ -55,6 +57,19 @@ list_metrics
 ```
 
 Find the target's `metricId` in the results. If `hasValue: false`, the target is at-risk/not_started due to absent data rather than underperformance — flag this distinctly.
+
+**Company sessions — locate the missing carbon data (optional):**
+
+When an emissions-related target has no data, pinpoint where collection stalled:
+
+```
+list_entities
+list_raw_carbon_entries
+  year: "<year>"
+  ghgScope: "<scope of the target metric>"
+```
+
+Compare which entities and periods have entries against the full entity list from `list_entities`. Report the gap concretely (e.g. "No Scope 1 entries for the Warsaw site after Q2") so the user knows exactly what to chase. Follow `pagination.nextCursor` to read all pages.
 
 ---
 

@@ -1,10 +1,12 @@
 ---
 name: portfolio-data-query
 description: Use when a Fund Manager user asks a plain-language question about portfolio ESG data, requests metric values across funds or years, or wants to compare ESG performance across their portfolio.
-compatibility: Requires KEY ESG MCP server (https://api.keyesg.com/mcp) connected as a custom connector or via Claude Desktop config.
+compatibility: Requires the KEY ESG MCP server connected as a custom connector or via Claude Desktop config — either the legacy endpoint (https://api.keyesg.com/mcp) or the fund-manager endpoint (https://api.keyesg.com/pe/mcp). Uses portfolio tools, so a fund-manager account is required; the standalone endpoint does not serve them. The connector may appear under any name (typically "key-esg" or "KEY ESG") — detect the connection by tool availability (e.g. who_am_i), not by server name or URL.
 ---
 
-## Step 1 — Parse the Question
+## Step 1 — Confirm Session and Parse the Question
+
+Call `who_am_i` first (no arguments). Confirm `organisationType: "fund_manager"` — if it returns `"company"`, this skill does not apply; the user has a company account with no portfolio tools. `who_am_i` also returns `portfolioCompanies` (`companyId` + `companyName`) — use these ids directly for single-company drilldowns instead of an extra `get_portfolio_reporting_summary` call when you only need the id.
 
 Extract from the user's question:
 
@@ -83,10 +85,10 @@ If the user asks about a specific portfolio company (e.g. "What are Company X's 
 get_metric_value
   metricIds: ["<uuid>", ...]
   year: "<year>"
-  companyId: "<portfolio-company-uuid>"   # from get_portfolio_reporting_summary
+  companyId: "<portfolio-company-uuid>"   # from who_am_i portfolioCompanies or get_portfolio_reporting_summary
 ```
 
-This returns that company's own metric values rather than the portfolio aggregate. Only built-in and fund-manager-owned custom metrics are returned.
+Match the company name against `who_am_i`'s `portfolioCompanies` (case-insensitive, partial match). This returns that company's own metric values rather than the portfolio aggregate. Only built-in and fund-manager-owned custom metrics are returned.
 
 ---
 
@@ -137,7 +139,7 @@ Call `get_portfolio_metric_value(metricIds: [id], year, fundId)` for each fund a
 
 - **Assuming the current year** — Always ask if the year is not specified. Do not default silently.
 - **Silently omitting `hasValue: false` metrics** — Always state explicitly when data is unavailable; never drop it from the answer without comment.
-- **Calling portfolio tools for non-Fund Manager users** — Portfolio tools require Fund Manager admin rights. If an auth error is returned, note the role requirement rather than retrying.
+- **Calling portfolio tools without a fund-manager role** — Portfolio tools require a **Fund Manager Admin** or **Fund Manager** KEY ESG account (these are different roles; both can use portfolio MCP tools). If an auth error is returned, note the role requirement rather than retrying.
 
 ---
 
@@ -148,5 +150,5 @@ Call `get_portfolio_metric_value(metricIds: [id], year, fundId)` for each fund a
 | Year not given                      | Ask before proceeding                                                                                                |
 | Fund name not found in `list_funds` | Show available fund names, ask user to confirm                                                                       |
 | `hasValue: false` for all funds     | Report "No data available for [metricTitle] in [year]"                                                               |
-| Auth error on portfolio tool        | Note "Fund manager admin role required for portfolio data"                                                           |
+| Auth error on portfolio tool        | Note "Fund Manager Admin or Fund Manager role required for portfolio data"                                           |
 | No matching metric for question     | Say "No matching metric found for '[question]'" — suggest closest alternatives from `list_portfolio_metrics` results |

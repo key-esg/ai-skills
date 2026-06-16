@@ -1,7 +1,7 @@
 ---
 name: esg-reporting-brief
 description: Use when a user asks to draft an ESG performance narrative, board pack, investor update, or annual report section from their KEY ESG data.
-compatibility: Requires KEY ESG MCP server (https://api.keyesg.com/mcp) connected as a custom connector or via Claude Desktop config.
+compatibility: Requires the KEY ESG MCP server connected as a custom connector or via Claude Desktop config. Any endpoint works — the legacy endpoint (https://api.keyesg.com/mcp), the fund-manager endpoint (https://api.keyesg.com/pe/mcp), or the standalone-company endpoint (https://api.keyesg.com/standalone/mcp) — pick the one matching your account type. The connector may appear under any name (typically "key-esg" or "KEY ESG") — detect the connection by tool availability (e.g. who_am_i), not by server name or URL.
 ---
 
 ## Step 1 — Establish Scope
@@ -11,10 +11,12 @@ Confirm with the user:
 - **Reporting year** (required, e.g. `2024`).
 - **Audience**: `board`, `investor`, or `annual_report`.
 
-Determine session type from your tool list:
+Call `who_am_i` (no arguments) to determine session type and the organisation name for the document header:
 
-- **`list_portfolio_metrics` available** → Fund Manager session
-- **`list_metrics` available** → company session (standalone or portfolio company)
+- **`organisationType: "fund_manager"`** → Fund Manager session (portfolio tools; `portfolioCompanies` lists companies available for drilldowns)
+- **`organisationType: "company"`** → company session (standalone or portfolio company)
+
+Use `companyName` from `who_am_i` as the organisation name in the draft. If `who_am_i` is unavailable, fall back to the tool list: `list_portfolio_metrics` present → Fund Manager session; `list_metrics` present → company session.
 
 Tone by audience:
 
@@ -90,6 +92,19 @@ get_metric_value
 ```
 
 Note any `isFresh: false` values — flag in the Data Notes section.
+
+**Company sessions — emissions detail (optional):**
+
+For an environmental section that needs activity-level colour (e.g. which sites or activities drive Scope 1), use the carbon data tools:
+
+```
+list_entities                        # sites/subsidiaries
+list_raw_carbon_entries
+  year: "<year>"
+  ghgScope: "scope-1"                # optional — repeat per scope as needed
+```
+
+Group entries by `entityName` or `subCategory` to explain what sits behind the headline emissions numbers (e.g. "Stationary combustion at the Munich plant accounts for most Scope 1 activity"). `list_raw_carbon_entries` is paginated — follow `pagination.nextCursor`. Quantities are activity inputs (litres, kWh), not emissions — use them for narrative context, never to recalculate totals.
 
 ---
 
