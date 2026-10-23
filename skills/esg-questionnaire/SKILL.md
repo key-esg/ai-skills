@@ -6,7 +6,7 @@ compatibility: Requires the KEY ESG MCP server connected as a custom connector o
 
 ## Step 1 — Establish Context
 
-Call `who_am_i` first (no arguments). It returns the authenticated user, organisation name, `organisationType`, roles, and (for fund managers) the accessible portfolio companies.
+Call `who_am_i` first (no arguments). It returns the authenticated user, organisation name, `organisationType`, roles, `availableReportingYears` (the years that hold data, most recent first — when only one is listed, use it instead of asking which year), and (for fund managers) the accessible portfolio companies.
 
 - **`organisationType: "fund_manager"`** → Fund Manager session — use portfolio tools (`list_portfolio_metrics`, `get_portfolio_metric_value`). `portfolioCompanies` gives the `companyId` values for per-company drilldowns.
 - **`organisationType: "company"`** → Company session (standalone or portfolio company) — use self-assessment tools (`list_metrics`, `get_metric_value`).
@@ -106,23 +106,26 @@ get_metric_value
 
 For the portfolio path, `companiesIncluded` counts companies with real reported values; `companiesMissingData` counts companies on the data request without data. Their sum is the total in-scope companies (those asked for this metric, not the whole portfolio). Use for coverage: e.g. "12,450 tCO2e across 18 of 22 in-scope companies (4 missing data)".
 
-**Company sessions — activity-level evidence (optional):**
+**Activity-level evidence (optional):**
 
-When a question asks for the detail behind an emissions figure (e.g. "List your Scope 1 emission sources", "Break down fuel consumption by site"), use the carbon data tools:
+When a question asks for the detail behind an emissions figure (e.g. "List your Scope 1 emission sources", "Break down fuel consumption by site"), use the carbon data tools. They work in both session types, but for fund managers they return the FM organisation's **own** (self-assessment) activity data — never a portfolio company's — so only use them for questions about the fund manager's own operations:
 
 ```
 list_entities                                  # site/subsidiary ids and names
-list_carbon_datapoint_groups
+list_datapoint_groups
   year: "<year>"
   ghgScope: "<scope-1|scope-2|scope-3>"        # optional
+  titleSearch: "<words from the question>"     # optional — fastest way to find a named data point
 list_raw_carbon_entries
   year: "<year>"
   ghgScope: "<scope-1|scope-2|scope-3>"        # optional
   entityIds: ["<uuid>", ...]                   # optional — from list_entities
-  dataPointGroupIds: ["<uuid>", ...]           # optional — from list_carbon_datapoint_groups
+  dataPointGroupIds: ["<uuid>", ...]           # optional — from list_datapoint_groups
 ```
 
-`list_raw_carbon_entries` is paginated — follow `pagination.nextCursor` until `hasMore` is false. Each entry gives entity, data point group, activity description, quantity, unit, and period — cite these as evidence; do not recalculate emissions from them.
+`list_datapoint_groups` is paginated too, and returns each group without its column schema unless you pass `includeSections: true`. Filter it (`ghgScope`, `category`, `titleSearch`, `isCarbon`) rather than listing everything, and check `totalMatching` against what you received before treating a list as complete.
+
+`list_raw_carbon_entries` is paginated — follow `pagination.nextCursor` until `hasMore` is false. Each entry gives entity, data point group, activity description, quantity, unit, and period (`{ token, label, periodStart, periodEnd }`) — cite these as evidence; do not recalculate emissions from them.
 
 Draft answer: **"[value] [unitOfMeasure] ([metricTitle], [year])"**
 

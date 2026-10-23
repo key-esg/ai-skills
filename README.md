@@ -30,6 +30,7 @@ For chat assistants (claude.ai, ChatGPT, Le Chat), see [Installing a skill](#ins
 | --- | --- | --- |
 | [ESG Questionnaire](skills/esg-questionnaire/SKILL.md) | Complete LP, vendor, or regulatory ESG questionnaires from your live portfolio data — with coverage stated per answer and low-confidence items flagged for human review. | [ZIP](https://github.com/key-esg/ai-skills/releases/latest/download/esg-questionnaire.zip) |
 | [Portfolio Data Query](skills/portfolio-data-query/SKILL.md) | Ask plain-language questions about portfolio ESG performance — compare funds, years, and companies, and drill into a single portfolio company. | [ZIP](https://github.com/key-esg/ai-skills/releases/latest/download/portfolio-data-query.zip) |
+| [Portfolio Chaser](skills/portfolio-chaser/SKILL.md) | Find the portfolio companies that are behind on ESG data, give each one reason to chase, and draft (or save and send) the chase emails to their points of contact. | [ZIP](https://github.com/key-esg/ai-skills/releases/latest/download/portfolio-chaser.zip) |
 
 ### For companies (standalone or portfolio companies)
 

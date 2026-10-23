@@ -93,9 +93,9 @@ get_metric_value
 
 Note any `isFresh: false` values — flag in the Data Notes section.
 
-**Company sessions — emissions detail (optional):**
+**Emissions detail (optional):**
 
-For an environmental section that needs activity-level colour (e.g. which sites or activities drive Scope 1), use the carbon data tools:
+For an environmental section that needs activity-level colour (e.g. which sites or activities drive Scope 1), use the carbon data tools. They work in both session types, but for fund managers they return the FM organisation's **own** (self-assessment) activity data — never a portfolio company's — so only use them for the fund manager's own-operations narrative:
 
 ```
 list_entities                        # sites/subsidiaries
