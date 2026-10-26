@@ -22,6 +22,8 @@ Session type from `who_am_i`:
 - **`organisationType: "fund_manager"`** → Fund Manager session (`portfolioCompanies` gives accessible company ids)
 - **`organisationType: "company"`** → company session (standalone or portfolio company)
 
+**Keep the requested scope throughout.** A fund manager can ask about their own organisation’s operations. For that request, use the self-assessment/company path (`list_metrics`, own-organisation values, `list_targets`, `list_action_plans`, and own sites) and skip portfolio-only steps. Use the portfolio path only for questions about accessible portfolio companies, keeping the same fund/company filters for metrics, targets, action plans and entity evidence. If the scope is unclear, ask before combining evidence.
+
 ---
 
 ## Step 2 — Resolve Metric IDs
@@ -70,7 +72,7 @@ Each metric returns:
 
 ## Step 4 — Entity Breakdown (one company)
 
-Use `get_metric_entity_breakdown` to split a metric across a company's entities (sites / subsidiaries). Use `list_entities` first if you need the entity IDs.
+Use `get_metric_entity_breakdown` to split a metric across a company's entities (sites / subsidiaries). For the authenticated organisation’s own sites, use `list_entities` if IDs are needed. For a portfolio company, first call `get_metric_entity_breakdown` with that company’s `companyId` and no `entityIds` filter; discover the company’s entities from the returned `entities[]`. Never pass IDs from the fund manager’s own `list_entities` result to a portfolio-company breakdown.
 
 ```
 get_metric_entity_breakdown

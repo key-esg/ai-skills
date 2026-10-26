@@ -13,7 +13,7 @@ Call `who_am_i` (no arguments).
 
 Ask the user for:
 
-- **Reporting year** (required, e.g. `2025`). Do not assume the current year — but do not ask either when `who_am_i` returned a single entry in `availableReportingYears`: use that year and say which one you used. Reporting years are calendar years (no fiscal-year offset).
+- **Reporting year** (required, e.g. `2025`). If no reporting year was specified, ask before calling year-scoped tools, even if only one year is available. Reporting years are calendar years (no fiscal-year offset).
 - **Scope focus** (optional) — a single GHG scope (`scope-1`, `scope-2`, `scope-3`) or all scopes.
 
 ---
@@ -93,10 +93,10 @@ get_metric_value
   year: "<year>"
 ```
 
-**Fund-manager accounts (self-assessment):**
+**Fund-manager accounts (self-assessment, always the FM organisation’s own data):**
 
 ```
-list_portfolio_metrics
+list_metrics
   year: "<year>"
 get_metric_value
   metricIds: ["<uuid>", ...]   # batch up to 50

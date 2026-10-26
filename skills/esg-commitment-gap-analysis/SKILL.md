@@ -6,7 +6,7 @@ compatibility: Requires the KEY ESG MCP server connected as a custom connector o
 
 ## Step 1 — Establish Context, Then Load All Targets
 
-Call `who_am_i` first (no arguments). `organisationType` tells you which metric tool applies in Step 4 (`"fund_manager"` → `list_portfolio_metrics`; `"company"` → `list_metrics`), and `companyName` names the organisation in the output header.
+Call `who_am_i` first (no arguments). This workflow audits the authenticated organisation’s own targets and action plans for both account types. Use `list_metrics` and own-organisation values throughout; never compare these targets with portfolio metrics. `companyName` names the organisation in the output header.
 
 Fetch the complete target set with no filters. This gives the full picture.
 
@@ -42,20 +42,11 @@ Returns: `id`, `title`, `description`, `category`, `owner`, `status`, `dueDate`.
 
 For each at-risk or missed target, determine whether the status is driven by actual performance or missing data.
 
-Use the `organisationType` from Step 1 to pick the tool:
-
-**`organisationType: "fund_manager"` (Fund Manager session):**
-
-```
-list_portfolio_metrics
-  year: "<targetYear or current year>"
-```
-
-**`organisationType: "company"` (company session):**
+Ask which reporting year to check if the user has not specified one. Use the same own-organisation scope for discovery and evidence, including for fund managers:
 
 ```
 list_metrics
-  year: "<targetYear or current year>"
+  year: "<confirmed reporting year>"
 ```
 
 Find the target's `metricId` in the results. If `hasValue: false`, the target is at-risk/not_started due to absent data rather than underperformance — flag this distinctly.
