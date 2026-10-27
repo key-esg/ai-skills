@@ -22,6 +22,8 @@ Session type from `who_am_i`:
 - **`organisationType: "fund_manager"`** → Fund Manager session (`portfolioCompanies` gives accessible company ids)
 - **`organisationType: "company"`** → company session (standalone or portfolio company)
 
+**Keep the requested scope throughout.** A fund manager can ask about their own organisation’s operations. For that request, use the self-assessment/company path (`list_metrics`, own-organisation values, `list_targets`, `list_action_plans`, and own sites) and skip portfolio-only steps. Use the portfolio path only for questions about accessible portfolio companies, keeping the same fund/company filters for metrics, targets, action plans and entity evidence. If the scope is unclear, ask before combining evidence.
+
 ---
 
 ## Step 2 — Resolve Metric IDs
@@ -62,7 +64,7 @@ get_metric_breakdown
 Each metric returns:
 
 - `total` — the yearly roll-up (same value as `get_metric_value`).
-- `periods` — an ordered series: 12 entries for monthly, 4 for quarterly. Missing periods are `null` (not omitted).
+- `periods` — an ordered series: 12 entries for monthly, 4 for quarterly. Missing periods are `null` (not omitted). Each entry carries `periodStart` / `periodEnd` (ISO dates); periods are calendar periods of the reporting year (no fiscal-year offset), so read the months off those dates rather than deriving them from the `q1`/`m1` key.
 - `baselinePeriod` — the periodicity the data was actually collected at (`Yearly`, `Quarterly`, or `Monthly`). **If `baselinePeriod` is coarser than the period you requested** (e.g. yearly data shown monthly), the finer values are pro-rated estimates, not directly entered figures — say so.
 - `isFresh` — flag `false` values in your data notes.
 
@@ -70,7 +72,7 @@ Each metric returns:
 
 ## Step 4 — Entity Breakdown (one company)
 
-Use `get_metric_entity_breakdown` to split a metric across a company's entities (sites / subsidiaries). Use `list_entities` first if you need the entity IDs.
+Use `get_metric_entity_breakdown` to split a metric across a company's entities (sites / subsidiaries). For the authenticated organisation’s own sites, use `list_entities` if IDs are needed. For a portfolio company, first call `get_metric_entity_breakdown` with that company’s `companyId` and no `entityIds` filter; discover the company’s entities from the returned `entities[]`. Never pass IDs from the fund manager’s own `list_entities` result to a portfolio-company breakdown.
 
 ```
 get_metric_entity_breakdown
@@ -95,7 +97,10 @@ get_portfolio_metric_entity_breakdown
   year: "<year>"
   period: "yearly"     # or "monthly" / "quarterly"
   fundId: "<uuid>"     # optional — scope to one fund
+  companyIds: ["<uuid>", ...]   # optional — restrict to specific portfolio companies
 ```
+
+A portfolio-wide monthly or quarterly breakdown across a large portfolio can return more data than an assistant's context allows in one call. Batch it with `companyIds` (or fewer `metricIds`) and combine the results: metric scope is still resolved against your whole accessible portfolio, so batching never changes which companies count as having been asked for a metric.
 
 Returns one entry per metric with `companies[]`, each carrying `companyName`, `total`, and an `entities[]` breakdown. Only companies in your accessible portfolio with a calculated value appear. **Only built-in and fund-manager-owned metrics are returned** — portfolio companies' own custom metrics are never included.
 
@@ -134,6 +139,6 @@ _Baseline periodicity: Monthly. Data is up to date (isFresh: true)._
 ## Notes
 
 - `get_metric_breakdown` is org-level only; use `get_metric_entity_breakdown` for per-entity detail of the same metric.
-- Fund managers can break a single portfolio company down with `companyId` on `get_metric_breakdown` / `get_metric_entity_breakdown`, or the whole portfolio with `get_portfolio_metric_entity_breakdown`.
+- Fund managers can break a single portfolio company down with `companyId` on `get_metric_breakdown` / `get_metric_entity_breakdown`, or the whole portfolio with `get_portfolio_metric_entity_breakdown` (narrowed to specific companies with `companyIds`).
 - All breakdown tools accept up to 50 metric IDs per call — batch related metrics to reduce round-trips.
 - Never fabricate or estimate values beyond what the platform returns. If data is absent, say so.

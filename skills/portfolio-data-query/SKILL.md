@@ -41,7 +41,18 @@ get_portfolio_reporting_summary
   fundId: "<uuid>"   # optional
 ```
 
-Returns per-company details including `countryOfHq`, `primaryCountry`, `sector`, `industry` — useful for answering questions like "Which companies in Europe have the highest emissions?" or "What's the sector breakdown of our portfolio?".
+Returns per-company details including `countryOfHq`, `primaryCountry`, `sector`, `industry` — useful for answering questions like "Which companies in Europe have the highest emissions?" or "What's the sector breakdown of our portfolio?". Each company also carries `pointOfContact` (name, email, status, or null) — use it for "who do I contact at X?". `get_portfolio_submission_status` returns the same field on its `companies` rollup, for "who do I chase for missing data?".
+
+For ownership, investment or valuation questions (ownership stakes, enterprise value, cumulative investment, realised or unrealised value), call `list_portfolio_financials` instead of looking for metrics — these figures are not ESG metrics:
+
+```
+list_portfolio_financials
+  year: "<year>"
+  fundId: "<uuid>"      # optional
+  companyIds: ["<uuid>"] # optional — batch these if the result is too large
+```
+
+Company-level figures are in `companyEntries`; per-fund figures are under `funds[].entries`. Entries are dated (usually quarter ends) — quote the date with each figure and the company `currency` with monetary values.
 
 ---
 

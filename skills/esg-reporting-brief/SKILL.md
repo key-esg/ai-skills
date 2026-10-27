@@ -24,6 +24,8 @@ Tone by audience:
 - `investor` — data-heavy, credible, transparent on coverage gaps
 - `annual_report` — formal, comprehensive, third-party-ready
 
+**Keep the requested scope throughout.** A fund manager can ask about their own organisation’s operations. For that request, use the self-assessment/company path (`list_metrics`, own-organisation values, `list_targets`, `list_action_plans`, and own sites) and skip portfolio-only steps. Use the portfolio path only for questions about accessible portfolio companies, keeping the same fund/company filters for metrics, targets, action plans and entity evidence. If the scope is unclear, ask before combining evidence.
+
 ---
 
 ## Step 2 — Portfolio / Company Overview (Fund Manager only)
@@ -93,9 +95,9 @@ get_metric_value
 
 Note any `isFresh: false` values — flag in the Data Notes section.
 
-**Company sessions — emissions detail (optional):**
+**Emissions detail (optional):**
 
-For an environmental section that needs activity-level colour (e.g. which sites or activities drive Scope 1), use the carbon data tools:
+For an environmental section that needs activity-level colour (e.g. which sites or activities drive Scope 1), use the carbon data tools. They work in both session types, but for fund managers they return the FM organisation's **own** (self-assessment) activity data — never a portfolio company's — so only use them for the fund manager's own-operations narrative:
 
 ```
 list_entities                        # sites/subsidiaries
@@ -110,8 +112,10 @@ Group entries by `entityName` or `subCategory` to explain what sits behind the h
 
 ## Step 4 — Target Progress
 
+For portfolio reporting, use `list_portfolio_targets` (with the same fund/company filters as the metrics); for own-organisation reporting, use `list_targets`. Attribute each target to its company and returned value year/scope. Never use the fund manager’s own targets as portfolio evidence.
+
 ```
-list_targets
+list_portfolio_targets   # portfolio path; list_targets for own-organisation reporting
 ```
 
 Group targets by status:
@@ -125,15 +129,17 @@ Group targets by status:
 
 ## Step 5 — Forward-Looking Content
 
+For portfolio reporting, use `list_portfolio_action_plans` with the same fund/company scope. Use `list_action_plans` only for the authenticated organisation’s own operations. Never substitute own-organisation actions for portfolio evidence.
+
 ```
-list_action_plans
+list_portfolio_action_plans   # portfolio path; list_action_plans for own-organisation reporting
   status: "in_progress"   # optional — filter to active initiatives
 list_policies
   category: "<environment|social|governance|general>"   # optional
 ```
 
 Use action plans for the "Looking Ahead" section (initiatives underway, investment in ESG improvement).
-Use policies for governance narrative — include `documentUrl` as an evidence link where relevant.
+The `list_policies` tool returns only the authenticated organisation’s policies, including for fund managers. Label these as own-organisation policies, never portfolio-company policies. They cannot establish a portfolio company’s policy coverage; flag such unanswered questions for review. Include `documentUrl` as evidence where relevant.
 
 ---
 
@@ -173,7 +179,7 @@ Standalone: company description, frameworks, reporting period.]
 
 ## Governance
 
-[Narrative + data table of key G metrics. Include policy highlights if list_policies available.]
+[Narrative + data table of key G metrics. Label list_policies evidence as own-organisation policies only; do not imply portfolio-company coverage.]
 
 ## Target Progress
 
@@ -185,7 +191,7 @@ Standalone: company description, frameworks, reporting period.]
 
 ## Looking Ahead
 
-[Active initiatives from list_action_plans. Forward commitments from list_policies.
+[Active initiatives from the scope-appropriate action-plan tool (list_portfolio_action_plans for portfolio, list_action_plans for own operations). Label own-organisation policy commitments explicitly.
 For board/investor: strategic framing. For annual report: programme details.]
 
 ## Data Notes

@@ -6,7 +6,7 @@ compatibility: Requires the KEY ESG MCP server connected as a custom connector o
 
 ## Step 1 — Establish Context, Then Load All Targets
 
-Call `who_am_i` first (no arguments). `organisationType` tells you which metric tool applies in Step 4 (`"fund_manager"` → `list_portfolio_metrics`; `"company"` → `list_metrics`), and `companyName` names the organisation in the output header.
+Call `who_am_i` first (no arguments). This workflow audits the authenticated organisation’s own targets and action plans for both account types. Use `list_metrics` and own-organisation values throughout; never compare these targets with portfolio metrics. `companyName` names the organisation in the output header.
 
 Fetch the complete target set with no filters. This gives the full picture.
 
@@ -14,7 +14,9 @@ Fetch the complete target set with no filters. This gives the full picture.
 list_targets
 ```
 
-Returns for each target: `id`, `metricId`, `metricTitle`, `category`, `description`, `targetType`, `currentValue`, `unitOfMeasure`, `baselineYear`, `baselineValue`, `targetYear`, `progressPercent`, `status`.
+Returns for each target: `id`, `metricId`, `metricTitle`, `category`, `description`, `targetType`, `coverage`, `entities`, `currentValue`, `currentValueYear`, `currentValueScope`, `unitOfMeasure`, `baselineYear`, `baselineValue`, `baselineValueYear`, `targetYear`, `progressPercent`, `status`.
+
+`currentValue` is calculated from submitted data for `currentValueYear` at `currentValueScope` (`organisation`, `entity` or `multiple-entities`) — it is never typed in against the target. Quote the year and scope whenever you report a target's progress, and if a value looks wrong for the metric, compare those two rather than suggesting it was entered by hand.
 
 Status values: `achieved`, `on_track`, `at_risk`, `not_started`, `missed`.
 
@@ -40,27 +42,18 @@ Returns: `id`, `title`, `description`, `category`, `owner`, `status`, `dueDate`.
 
 For each at-risk or missed target, determine whether the status is driven by actual performance or missing data.
 
-Use the `organisationType` from Step 1 to pick the tool:
-
-**`organisationType: "fund_manager"` (Fund Manager session):**
-
-```
-list_portfolio_metrics
-  year: "<targetYear or current year>"
-```
-
-**`organisationType: "company"` (company session):**
+Ask which reporting year to check if the user has not specified one. Use the same own-organisation scope for discovery and evidence, including for fund managers:
 
 ```
 list_metrics
-  year: "<targetYear or current year>"
+  year: "<confirmed reporting year>"
 ```
 
 Find the target's `metricId` in the results. If `hasValue: false`, the target is at-risk/not_started due to absent data rather than underperformance — flag this distinctly.
 
-**Company sessions — locate the missing carbon data (optional):**
+**Locate the missing carbon data (optional):**
 
-When an emissions-related target has no data, pinpoint where collection stalled:
+When an emissions-related target has no data, pinpoint where collection stalled. The carbon data tools work in both session types — for fund managers they return the FM organisation's own (self-assessment) data, which matches the self-assessment targets this skill audits:
 
 ```
 list_entities
@@ -96,11 +89,11 @@ Present a gap table followed by a data freshness caveat.
 ```
 ## ESG Commitment Gap Analysis — [Year]
 
-| Metric | Target | Status | Current | Target Value | Action Plan | Gap Types |
-|--------|--------|--------|---------|--------------|-------------|-----------|
-| GHG Scope 1 | Reduce 50% by 2030 vs 2020 | at_risk | 12,450 tCO2e | 7,500 tCO2e | None | At risk, No action plan |
-| Water consumption | Reduce 20% by 2025 | missed | 85,000 m³ | 68,000 m³ | Water efficiency programme | Missed |
-| Renewable energy | 100% by 2027 | on_track | 74% | 100% | Solar installation project | — |
+| Metric | Target | Status | Current (year, scope) | Target Value | Action Plan | Gap Types |
+|--------|--------|--------|-----------------------|--------------|-------------|-----------|
+| GHG Scope 1 | Reduce 50% by 2030 vs 2020 | at_risk | 12,450 tCO2e (2024, organisation) | 7,500 tCO2e | None | At risk, No action plan |
+| Water consumption | Reduce 20% by 2025 | missed | 85,000 m³ (2025, organisation) | 68,000 m³ | Water efficiency programme | Missed |
+| Renewable energy | 100% by 2027 | on_track | 74% (2024, entity: Warsaw site) | 100% | Solar installation project | — |
 
 ## Targets with No Data
 The following targets cannot be assessed — no metric data exists for [year]:
@@ -123,6 +116,8 @@ Target statuses are derived from the latest available metric values inside KEY E
 - **Treating `at_risk` as missed** — A target is only `missed` once the target year has passed without achievement. `at_risk` means current trend falls short but the deadline hasn't passed.
 - **Ignoring data absence as a gap type** — When `hasValue: false`, the at-risk status may reflect missing data rather than underperformance. Always classify these separately.
 - **Interpreting `progressPercent: null` as zero progress** — Null progress often means the target is boolean type or baseline data is absent. Check `targetType` before drawing conclusions.
+- **Reporting a current value without its year and scope** — `currentValue` is the latest year with data at or before `targetYear`, at the target's own scope. Quote `currentValueYear` and `currentValueScope` every time, or the reader cannot tell a stale year or an entity-scoped target from a wrong number.
+- **Speculating that a surprising value was entered by hand** — Target values are always calculated. When `currentValue` disagrees with the metric the user has in mind, the explanation is `currentValueYear` or `currentValueScope`, not data entry. Name the mismatch; never diagnose it as a typo.
 
 ---
 

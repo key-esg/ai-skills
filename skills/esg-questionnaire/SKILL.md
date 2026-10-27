@@ -6,7 +6,7 @@ compatibility: Requires the KEY ESG MCP server connected as a custom connector o
 
 ## Step 1 — Establish Context
 
-Call `who_am_i` first (no arguments). It returns the authenticated user, organisation name, `organisationType`, roles, and (for fund managers) the accessible portfolio companies.
+Call `who_am_i` first (no arguments). It returns the authenticated user, organisation name, `organisationType`, roles, `availableReportingYears` (the years that hold data, most recent first; ask for the reporting year if unspecified, even if only one is listed), and (for fund managers) the accessible portfolio companies.
 
 - **`organisationType: "fund_manager"`** → Fund Manager session — use portfolio tools (`list_portfolio_metrics`, `get_portfolio_metric_value`). `portfolioCompanies` gives the `companyId` values for per-company drilldowns.
 - **`organisationType: "company"`** → Company session (standalone or portfolio company) — use self-assessment tools (`list_metrics`, `get_metric_value`).
@@ -17,6 +17,8 @@ Ask the user for:
 
 - **Reporting year** (required, e.g. `2026`). Do not proceed without this.
 - **Fund scope** (Fund Manager only, optional) — answers scoped to a specific fund, or the whole portfolio? Only ask if you already have fundIds from a previous tool call otherwise skip this.
+
+**Keep the requested scope throughout.** A fund manager can ask about their own organisation’s operations. For that request, use the self-assessment/company path (`list_metrics`, own-organisation values, `list_targets`, `list_action_plans`, and own sites) and skip portfolio-only steps. Use the portfolio path only for questions about accessible portfolio companies, keeping the same fund/company filters for metrics, targets, action plans and entity evidence. If the scope is unclear, ask before combining evidence.
 
 ---
 
@@ -106,23 +108,26 @@ get_metric_value
 
 For the portfolio path, `companiesIncluded` counts companies with real reported values; `companiesMissingData` counts companies on the data request without data. Their sum is the total in-scope companies (those asked for this metric, not the whole portfolio). Use for coverage: e.g. "12,450 tCO2e across 18 of 22 in-scope companies (4 missing data)".
 
-**Company sessions — activity-level evidence (optional):**
+**Activity-level evidence (optional):**
 
-When a question asks for the detail behind an emissions figure (e.g. "List your Scope 1 emission sources", "Break down fuel consumption by site"), use the carbon data tools:
+When a question asks for the detail behind an emissions figure (e.g. "List your Scope 1 emission sources", "Break down fuel consumption by site"), use the carbon data tools. They work in both session types, but for fund managers they return the FM organisation's **own** (self-assessment) activity data — never a portfolio company's — so only use them for questions about the fund manager's own operations:
 
 ```
 list_entities                                  # site/subsidiary ids and names
-list_carbon_datapoint_groups
+list_datapoint_groups
   year: "<year>"
   ghgScope: "<scope-1|scope-2|scope-3>"        # optional
+  titleSearch: "<words from the question>"     # optional — fastest way to find a named data point
 list_raw_carbon_entries
   year: "<year>"
   ghgScope: "<scope-1|scope-2|scope-3>"        # optional
   entityIds: ["<uuid>", ...]                   # optional — from list_entities
-  dataPointGroupIds: ["<uuid>", ...]           # optional — from list_carbon_datapoint_groups
+  dataPointGroupIds: ["<uuid>", ...]           # optional — from list_datapoint_groups
 ```
 
-`list_raw_carbon_entries` is paginated — follow `pagination.nextCursor` until `hasMore` is false. Each entry gives entity, data point group, activity description, quantity, unit, and period — cite these as evidence; do not recalculate emissions from them.
+`list_datapoint_groups` is paginated too, and returns each group without its column schema unless you pass `includeSections: true`. Filter it (`ghgScope`, `category`, `titleSearch`, `isCarbon`) rather than listing everything, and check `totalMatching` against what you received before treating a list as complete.
+
+`list_raw_carbon_entries` is paginated — follow `pagination.nextCursor` until `hasMore` is false. Each entry gives entity, data point group, activity description, quantity, unit, and period (`{ token, label, periodStart, periodEnd }`) — cite these as evidence; do not recalculate emissions from them.
 
 Draft answer: **"[value] [unitOfMeasure] ([metricTitle], [year])"**
 
@@ -130,8 +135,10 @@ Draft answer: **"[value] [unitOfMeasure] ([metricTitle], [year])"**
 
 Questions about goals, net-zero commitments, or reduction pledges (e.g. "Do you have a net-zero target?", "What are your emissions reduction commitments?").
 
+For portfolio reporting, use `list_portfolio_targets` (with the same fund/company filters as the metrics); for own-organisation reporting, use `list_targets`. Attribute each target to its company and returned value year/scope. Never use the fund manager’s own targets as portfolio evidence.
+
 ```
-list_targets
+list_portfolio_targets   # portfolio path; list_targets for own-organisation reporting
   category: "<environment|social|governance|general>"   # optional
 ```
 
@@ -148,14 +155,18 @@ list_policies
 
 Returns: `id`, `policyType`, `title`, `description`, `category`, `reviewedAt`, `documentUrl`.
 
+For fund managers, `list_policies` returns only the FM organisation’s own policies. Label them accordingly and never use them as evidence of portfolio-company policy coverage. Flag portfolio policy questions for human review when no company-specific evidence is available.
+
 Match the question to a policy using `policyType` first (e.g. `modern_slavery`, `climate`, `dei`) then `description`. Always include `documentUrl` in the answer — it is the evidence link for the policy.
 
 ### 4d. Action Plan / Initiative Questions
 
 Questions about ongoing ESG improvement programmes.
 
+For portfolio reporting, use `list_portfolio_action_plans` with the same fund/company scope. Use `list_action_plans` only for the authenticated organisation’s own operations. Never substitute own-organisation actions for portfolio evidence.
+
 ```
-list_action_plans
+list_portfolio_action_plans   # portfolio path; list_action_plans for own-organisation reporting
   category: "<environment|social|governance|general>"   # optional
   status: "in_progress"   # optional — filter to active initiatives
 ```
